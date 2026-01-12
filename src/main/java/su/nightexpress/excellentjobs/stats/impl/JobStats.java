@@ -7,19 +7,19 @@ import su.nightexpress.nightcore.util.TimeUtil;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class JobStats {
 
     private final Map<String, DayStats> dayStatsMap;
 
     public JobStats() {
-        this(new HashMap<>());
+        this(new ConcurrentHashMap<>());
     }
 
     public JobStats(@NotNull Map<String, DayStats> dayStatsMap) {
-        this.dayStatsMap = dayStatsMap;
+        this.dayStatsMap = new ConcurrentHashMap<>(dayStatsMap);
     }
 
     @NotNull

@@ -15,7 +15,7 @@ public class JobLeaveEvent extends JobEvent implements Cancellable {
     private boolean cancelled;
 
     public JobLeaveEvent(@NotNull Player player, @NotNull Job job, @NotNull JobState state) {
-        super(false, player, job);
+        super(!org.bukkit.Bukkit.isPrimaryThread(), player, job);
         this.state = state;
     }
 

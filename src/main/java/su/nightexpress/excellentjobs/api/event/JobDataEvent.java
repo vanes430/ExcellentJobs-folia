@@ -11,7 +11,7 @@ public abstract class JobDataEvent extends JobEvent {
     protected final JobData jobData;
 
     public JobDataEvent(@NotNull Player player, @NotNull JobUser user, @NotNull JobData jobData) {
-        super(false, player, jobData.getJob());
+        super(!org.bukkit.Bukkit.isPrimaryThread(), player, jobData.getJob());
         this.user = user;
         this.jobData = jobData;
     }

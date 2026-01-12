@@ -25,7 +25,7 @@ public class JobDialogs {
             .base(DialogBases.builder(Lang.DIALOG_LEAVE_TITLE.getString()).body(DialogBodies.plainMessage(data.replaceAllPlaceholders().apply(Lang.DIALOG_LEAVE_BODY.getString()))).build())
             .handleResponse(LEAVE_YES, (player1, identifier, nbtHolder) -> {
                 plugin.getJobManager().leaveJob(player1, job);
-                player.closeInventory();
+                plugin.runTaskAtPlayer(player1, () -> plugin.getJobManager().openJobMenu(player1, job));
             })
         );
 

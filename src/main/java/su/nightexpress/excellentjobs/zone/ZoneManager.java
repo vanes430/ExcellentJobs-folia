@@ -34,6 +34,7 @@ import su.nightexpress.nightcore.util.geodata.pos.BlockPos;
 
 import java.io.File;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class ZoneManager extends AbstractManager<JobsPlugin> {
@@ -53,8 +54,8 @@ public class ZoneManager extends AbstractManager<JobsPlugin> {
 
     public ZoneManager(@NotNull JobsPlugin plugin) {
         super(plugin);
-        this.zoneMap = new HashMap<>();
-        this.selectionMap = new HashMap<>();
+        this.zoneMap = new ConcurrentHashMap<>();
+        this.selectionMap = new ConcurrentHashMap<>();
     }
 
     @Override

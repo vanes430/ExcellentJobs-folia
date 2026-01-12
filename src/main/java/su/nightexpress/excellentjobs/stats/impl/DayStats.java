@@ -5,8 +5,8 @@ import su.nightexpress.economybridge.api.Currency;
 import su.nightexpress.excellentjobs.job.impl.JobObjective;
 
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class DayStats {
 
@@ -19,15 +19,16 @@ public class DayStats {
     // TODO XP
 
     public DayStats() {
-        this(new HashMap<>(), new HashMap<>(), JobStats.toEpochMillis(LocalDate.now()), 0);
+        this(new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), JobStats.toEpochMillis(LocalDate.now()), 0);
     }
 
     public DayStats(@NotNull Map<String, Double> currencyEarned,
                     @NotNull Map<String, Map<String, Integer>> objectivesCompleted,
                     long timestamp,
                     int ordersCompleted) {
-        this.currencyEarned = currencyEarned;
-        this.objectivesCompleted = objectivesCompleted;
+        this.currencyEarned = new ConcurrentHashMap<>(currencyEarned);
+        this.objectivesCompleted = new ConcurrentHashMap<>();
+        objectivesCompleted.forEach((id, map) -> this.objectivesCompleted.put(id, new ConcurrentHashMap<>(map)));
         this.timestamp = timestamp;
         this.ordersCompleted = ordersCompleted;
     }
@@ -47,7 +48,7 @@ public class DayStats {
     }
 
     public int getObjectives(@NotNull String objectiveId) {
-        Map<String, Integer> map = this.objectivesCompleted.computeIfAbsent(objectiveId.toLowerCase(), k -> new HashMap<>());
+        Map<String, Integer> map = this.objectivesCompleted.computeIfAbsent(objectiveId.toLowerCase(), k -> new ConcurrentHashMap<>());
         return map.values().stream().mapToInt(i -> i).sum();
     }
 
@@ -56,7 +57,7 @@ public class DayStats {
     }
 
     public int getObjectives(@NotNull String objectiveId, @NotNull String objectName) {
-        var map = this.objectivesCompleted.computeIfAbsent(objectiveId.toLowerCase(), k -> new HashMap<>());
+        var map = this.objectivesCompleted.computeIfAbsent(objectiveId.toLowerCase(), k -> new ConcurrentHashMap<>());
         return map.getOrDefault(objectName.toLowerCase(), 0);
     }
 
@@ -85,7 +86,7 @@ public class DayStats {
         objectiveId = objectiveId.toLowerCase();
         objectName = objectName.toLowerCase();
 
-        var map = this.objectivesCompleted.computeIfAbsent(objectiveId, k -> new HashMap<>());
+        var map = this.objectivesCompleted.computeIfAbsent(objectiveId, k -> new ConcurrentHashMap<>());
         int current = map.getOrDefault(objectName, 0);
         map.put(objectName, current + amount);
     }

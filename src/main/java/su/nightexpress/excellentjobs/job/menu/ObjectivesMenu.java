@@ -25,6 +25,7 @@ import su.nightexpress.nightcore.config.FileConfig;
 import su.nightexpress.nightcore.ui.menu.MenuViewer;
 import su.nightexpress.nightcore.ui.menu.data.MenuFiller;
 import su.nightexpress.nightcore.ui.menu.data.MenuLoader;
+import su.nightexpress.nightcore.ui.menu.item.ItemHandler;
 import su.nightexpress.nightcore.ui.menu.item.MenuItem;
 import su.nightexpress.nightcore.ui.menu.data.ConfigBased;
 import su.nightexpress.nightcore.ui.menu.data.Filled;
@@ -123,7 +124,7 @@ public class ObjectivesMenu extends LinkedMenu<JobsPlugin, ObjectivesMenu.Data> 
                 .setPriority(10)
                 .setSlots(this.workTypeSlots[index])
                 .setHandler((viewer1, event) -> {
-                    this.runNextTick(() -> this.open(player, job, work));
+                    this.plugin.runTaskAtPlayer(player, () -> this.open(player, job, work));
                 })
             );
         }
@@ -257,14 +258,26 @@ public class ObjectivesMenu extends LinkedMenu<JobsPlugin, ObjectivesMenu.Data> 
 
         this.objectiveSlots = ConfigValue.create("Objective.Slots", IntStream.range(18, 45).toArray()).read(config);
 
+        NightItem nextItem = NightItem.fromType(Material.ARROW)
+            .setDisplayName(su.nightexpress.nightcore.util.text.tag.Tags.YELLOW.wrap(su.nightexpress.nightcore.util.text.tag.Tags.BOLD.wrap("Next Page")));
+        loader.addDefaultItem(nextItem.toMenuItem().setSlots(53).setPriority(10).setHandler(new ItemHandler("next_page", (viewer, event) -> {
+            int page = viewer.getPage() + 1;
+            this.open(viewer.getPlayer(), this.getLink(viewer), v -> v.setPage(page));
+        })));
 
-        loader.addDefaultItem(MenuItem.buildNextPage(this, 53).setPriority(10));
-        loader.addDefaultItem(MenuItem.buildPreviousPage(this, 45).setPriority(10));
-        loader.addDefaultItem(MenuItem.buildReturn(this, 49, (viewer, event) -> {
+        NightItem prevItem = NightItem.fromType(Material.ARROW)
+            .setDisplayName(su.nightexpress.nightcore.util.text.tag.Tags.YELLOW.wrap(su.nightexpress.nightcore.util.text.tag.Tags.BOLD.wrap("Previous Page")));
+        loader.addDefaultItem(prevItem.toMenuItem().setSlots(45).setPriority(10).setHandler(new ItemHandler("prev_page", (viewer, event) -> {
+            int page = Math.max(1, viewer.getPage() - 1);
+            this.open(viewer.getPlayer(), this.getLink(viewer), v -> v.setPage(page));
+        })));
+
+        NightItem backItem = NightItem.fromType(Material.IRON_DOOR)
+            .setDisplayName(su.nightexpress.nightcore.util.text.tag.Tags.YELLOW.wrap(su.nightexpress.nightcore.util.text.tag.Tags.BOLD.wrap("Return")));
+        loader.addDefaultItem(backItem.toMenuItem().setSlots(49).setPriority(10).setHandler(new ItemHandler("return", (viewer, event) -> {
             Player player = viewer.getPlayer();
             Job job = this.getLink(player).job;
-
-            this.runNextTick(() -> plugin.getJobManager().openJobMenu(viewer.getPlayer(), job));
-        }).setPriority(10));
+            this.plugin.runTaskAtPlayer(player, () -> this.plugin.getJobManager().openJobMenu(player, job));
+        })));
     }
 }

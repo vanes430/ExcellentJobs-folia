@@ -85,19 +85,21 @@ public class BoosterManager extends AbstractManager<JobsPlugin> {
 
     private void tickPersonal() {
         Players.getOnline().forEach(player -> {
-            JobUser user = plugin.getUserManager().getOrFetch(player);
+            this.plugin.runTaskAtPlayer(player, () -> {
+                JobUser user = plugin.getUserManager().getOrFetch(player);
 
-            user.getBoosterMap().forEach((jobId, booster) -> {
-                if (!booster.isExpired()) return;
+                user.getBoosterMap().forEach((jobId, booster) -> {
+                    if (!booster.isExpired()) return;
 
-                Job job = plugin.getJobManager().getJobById(jobId);
-                if (job != null) {
-                    Lang.BOOSTER_EXPIRED_PERSONAL.getMessage().send(player, replacer -> replacer
-                        .replace(job.replacePlaceholders())
-                        .replace(booster.replacePlaceholers()));
-                }
+                    Job job = plugin.getJobManager().getJobById(jobId);
+                    if (job != null) {
+                        Lang.BOOSTER_EXPIRED_PERSONAL.getMessage().send(player, replacer -> replacer
+                            .replace(job.replacePlaceholders())
+                            .replace(booster.replacePlaceholers()));
+                    }
 
-                user.removeBooster(jobId);
+                    user.removeBooster(jobId);
+                });
             });
         });
     }

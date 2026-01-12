@@ -57,7 +57,7 @@ public class JobMenu extends LinkedMenu<JobsPlugin, Job> implements ConfigBased 
     private List<String> orderCooldownLore;
 
     public JobMenu(@NotNull JobsPlugin plugin) {
-        super(plugin, MenuType.GENERIC_9X5, BLACK.wrap(JOB_NAME + " Job"));
+        super(plugin, MenuType.GENERIC_9X6, BLACK.wrap(JOB_NAME + " Job"));
 
         this.load(FileConfig.loadOrExtract(plugin, Config.DIR_MENU, FILE_NAME));
     }
@@ -166,14 +166,14 @@ public class JobMenu extends LinkedMenu<JobsPlugin, Job> implements ConfigBased 
         Player player = viewer.getPlayer();
         Job job = this.getLink(player);
         this.plugin.getJobManager().joinJob(player, job);
-        this.runNextTick(() -> this.flush(player));
+        this.plugin.runTaskAtPlayer(player, () -> this.open(player, job));
     }
 
     private void handlePriority(@NotNull MenuViewer viewer, @NotNull JobState state) {
         Player player = viewer.getPlayer();
         Job job = this.getLink(player);
         this.plugin.getJobManager().joinJob(player, job, state, false);
-        this.runNextTick(() -> this.flush(player));
+        this.plugin.runTaskAtPlayer(player, () -> this.open(player, job));
     }
 
     private void handleLeave(@NotNull MenuViewer viewer, @NotNull InventoryClickEvent event) {
@@ -182,21 +182,21 @@ public class JobMenu extends LinkedMenu<JobsPlugin, Job> implements ConfigBased 
         JobData data = plugin.getUserManager().getOrFetch(player).getData(job);
         if (!data.isActive()) return;
 
-        this.runNextTick(() -> this.plugin.getJobManager().openLeaveConfirmMenu(player, job));
+        this.plugin.runTaskAtPlayer(player, () -> this.plugin.getJobManager().openLeaveConfirmMenu(player, job));
     }
 
     private void handleObjectives(@NotNull MenuViewer viewer, @NotNull InventoryClickEvent event) {
         Player player = viewer.getPlayer();
         Job job = this.getLink(player);
 
-        this.runNextTick(() -> this.plugin.getJobManager().openObjectivesMenu(player, job));
+        this.plugin.runTaskAtPlayer(player, () -> this.plugin.getJobManager().openObjectivesMenu(player, job));
     }
 
     private void handleLevels(@NotNull MenuViewer viewer, @NotNull InventoryClickEvent event) {
         Player player = viewer.getPlayer();
         Job job = this.getLink(player);
 
-        this.runNextTick(() -> this.plugin.getJobManager().openRewardsMenu(player, job));
+        this.plugin.runTaskAtPlayer(player, () -> this.plugin.getJobManager().openRewardsMenu(player, job));
     }
 
     private void handleMissions(@NotNull MenuViewer viewer, @NotNull InventoryClickEvent event) {
@@ -207,7 +207,7 @@ public class JobMenu extends LinkedMenu<JobsPlugin, Job> implements ConfigBased 
         if (!data.isActive() || !data.isReadyForNextOrder()) return;
 
         this.plugin.getJobManager().createSpecialOrder(player, job, false);
-        this.runNextTick(player::closeInventory);
+        this.plugin.runTaskAtPlayer(player, () -> this.open(player, job));
     }
 
     private void handleStats(@NotNull MenuViewer viewer, @NotNull InventoryClickEvent event) {
@@ -219,11 +219,12 @@ public class JobMenu extends LinkedMenu<JobsPlugin, Job> implements ConfigBased 
         JobData data = plugin.getUserManager().getOrFetch(player).getData(job);
         if (!data.isActive()) return;
 
-        this.runNextTick(() -> statsManager.openStats(player, job));
+        this.plugin.runTaskAtPlayer(player, () -> statsManager.openStats(player, job));
     }
 
     private void handleReturn(@NotNull MenuViewer viewer, @NotNull InventoryClickEvent event) {
-        this.runNextTick(() -> plugin.getJobManager().openJobsMenu(viewer.getPlayer()));
+        Player player = viewer.getPlayer();
+        this.plugin.runTaskAtPlayer(player, () -> plugin.getJobManager().openJobsMenu(player));
     }
 
     @Override
@@ -260,12 +261,14 @@ public class JobMenu extends LinkedMenu<JobsPlugin, Job> implements ConfigBased 
             SOFT_ORANGE.wrap("▪ " + GRAY.wrap("Timeleft: ") + GENERIC_TIME)
         )).read(cfg);
 
-        loader.addDefaultItem(MenuItem.buildReturn(this, 40, this::handleReturn).setPriority(10));
+        NightItem backItem = NightItem.fromType(Material.IRON_DOOR)
+            .setDisplayName(su.nightexpress.nightcore.util.text.night.wrapper.TagWrappers.YELLOW.wrap(su.nightexpress.nightcore.util.text.night.wrapper.TagWrappers.BOLD.wrap("Return")));
+        loader.addDefaultItem(backItem.toMenuItem().setSlots(49).setPriority(10).setHandler(new ItemHandler("return", this::handleReturn)));
 
         loader.addDefaultItem(NightItem.fromType(Material.BLACK_STAINED_GLASS_PANE).setHideTooltip(true)
             .toMenuItem()
             .setPriority(-1)
-            .setSlots(0,1,2,3,4,5,6,7,8,36,37,38,39,40,41,42,43,44)
+            .setSlots(0,1,2,3,4,5,6,7,8,45,46,47,48,49,50,51,52,53)
         );
 
         loader.addDefaultItem(NightItem.fromType(Material.COMPASS)

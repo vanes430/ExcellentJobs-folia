@@ -9,8 +9,8 @@ import su.nightexpress.nightcore.util.TimeUtil;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 public class JobLimitData {
@@ -23,12 +23,12 @@ public class JobLimitData {
 
     @NotNull
     public static JobLimitData create(@NotNull Job job) {
-        return new JobLimitData(job.getId(), new HashMap<>(), 0, System.currentTimeMillis());
+        return new JobLimitData(job.getId(), new ConcurrentHashMap<>(), 0, System.currentTimeMillis());
     }
 
     public JobLimitData(@NotNull String jobId, @NotNull Map<String, Double> currencyEarned, double xpEarned, long expireDate) {
         this.jobId = jobId.toLowerCase();
-        this.currencyEarned = currencyEarned;
+        this.currencyEarned = new ConcurrentHashMap<>(currencyEarned);
         this.xpEarned = xpEarned;
         this.expireDate = expireDate;
     }

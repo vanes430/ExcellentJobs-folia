@@ -42,7 +42,7 @@ public class CraftingWork extends Work<CraftItemEvent, Material> {
 
         if (event.isShiftClick() || numberKey) {
             int has = Players.countItem(player, craft);
-            plugin.getServer().getScheduler().runTask(plugin, () -> {
+            plugin.runTaskAtPlayer(player, () -> {
                 int now = Players.countItem(player, craft);
                 int crafted = now - has;
                 this.doObjective(player, type, crafted);

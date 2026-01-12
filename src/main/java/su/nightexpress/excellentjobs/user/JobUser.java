@@ -45,9 +45,9 @@ public class JobUser extends AbstractUser {
                    @NotNull Map<String, JobStats> statsMap,
                    @NotNull UserSettings settings) {
         super(uuid, name, dateCreated, lastOnline);
-        this.dataMap = new HashMap<>(dataMap);
+        this.dataMap = new ConcurrentHashMap<>(dataMap);
         this.boosterMap = new ConcurrentHashMap<>(boosterMap);
-        this.statsMap = new HashMap<>(statsMap);
+        this.statsMap = new ConcurrentHashMap<>(statsMap);
         this.settings = settings;
     }
 

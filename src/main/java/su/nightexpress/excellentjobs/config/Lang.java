@@ -36,6 +36,7 @@ public class Lang extends CoreLang {
     public static final LangString COMMAND_LEVEL_DESC      = LangString.of("Command.Level.Desc", "Level management.");
     public static final LangString COMMAND_XP_DESC         = LangString.of("Command.XP.Desc", "XP management.");
     public static final LangString COMMAND_RESET_DESC      = LangString.of("Command.Reset.Desc", "Reset job progress.");
+    public static final LangString COMMAND_RESET_USER_DESC = LangString.of("Command.ResetUser.Desc", "Completely reset player's job profile.");
     public static final LangString COMMAND_MENU_DESC       = LangString.of("Command.Menu.Desc", "Open Jobs GUI.");
     public static final LangString COMMAND_LEVELS_DESC     = LangString.of("Command.Levels.Desc", "Browse job levels.");
     public static final LangString COMMAND_OBJECTIVES_DESC = LangString.of("Command.Objectives.Desc", "Browse job objectives.");
@@ -96,6 +97,10 @@ public class Lang extends CoreLang {
 
     public static final LangText COMMAND_RESET_DONE = LangText.of("Command.Reset.Done",
         GRAY.wrap("Successfully reset " + YELLOW.wrap(JOB_NAME) + " progress for " + YELLOW.wrap(PLAYER_NAME) + ".")
+    );
+
+    public static final LangText COMMAND_RESET_USER_DONE = LangText.of("Command.ResetUser.Done",
+        GRAY.wrap("Successfully reset " + YELLOW.wrap(PLAYER_NAME) + "'s job profile.")
     );
 
 
@@ -436,18 +441,25 @@ public class Lang extends CoreLang {
 
     public static final LangUIButton UI_JOB_LEAVE_INFO = LangUIButton.builder("UI.Job.LeaveInfo", JOB_NAME)
         .description(
-            GRAY.wrap(SOFT_YELLOW.wrap("▪ ") + "XP: " + SOFT_YELLOW.wrap(JOB_DATA_XP) + "/" + SOFT_YELLOW.wrap(JOB_DATA_XP_MAX)),
-            GRAY.wrap(SOFT_YELLOW.wrap("▪ ") + "Level: " + SOFT_YELLOW.wrap(JOB_DATA_LEVEL) + "/" + SOFT_YELLOW.wrap(JOB_DATA_LEVEL_MAX))
+            "",
+            GRAY.wrap("You are about to " + RED.wrap("LEAVE") + " this job."),
+            "",
+            GRAY.wrap(SOFT_ORANGE.wrap(" ▪ ") + "Current Level: " + WHITE.wrap(JOB_DATA_LEVEL)),
+            GRAY.wrap(SOFT_ORANGE.wrap(" ▪ ") + "Total XP: " + WHITE.wrap(JOB_DATA_XP)),
+            "",
+            RED.wrap(ITALIC.wrap("All progress will be lost!"))
         ).build();
 
 
-    public static final LangString DIALOG_LEAVE_TITLE          = LangString.of("Dialog.Leave.Title", "Confirm the action");
+    public static final LangString DIALOG_LEAVE_TITLE          = LangString.of("Dialog.Leave.Title", "Confirm Job Exit");
     public static final LangString DIALOG_LEAVE_BUTTON_CONFIRM = LangString.of("Dialog.Leave.Button.Confirm", "Confirm");
     public static final LangString DIALOG_LEAVE_BUTTON_CANCEL  = LangString.of("Dialog.Leave.Button.Cancel", "Cancel");
     public static final LangString DIALOG_LEAVE_BODY           = LangString.of("Dialog.Leave.Body",
-        SOFT_RED.and(UNDERLINED).wrap("You're about to leave the " + JOB_NAME + " job.") + BR + " " + BR +
-            GRAY.wrap("The following progress will be lost:") + BR + " " + BR +
-            GRAY.wrap(SOFT_RED.wrap(JOB_DATA_LEVEL) + " Levels, " + SOFT_RED.wrap(JOB_DATA_XP) + " XP.")
+        SOFT_RED.and(BOLD).wrap("Leave " + JOB_NAME + "?") + BR + " " + BR +
+            GRAY.wrap("The following progress will be lost:") + BR +
+            GRAY.wrap(" ▪ Level: " + RED.wrap(JOB_DATA_LEVEL)) + BR +
+            GRAY.wrap(" ▪ XP: " + RED.wrap(JOB_DATA_XP)) + BR + " " + BR +
+            DARK_GRAY.wrap(ITALIC.wrap("This action cannot be undone."))
     );
 
 

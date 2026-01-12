@@ -23,6 +23,7 @@ import su.nightexpress.nightcore.util.bukkit.NightItem;
 import su.nightexpress.nightcore.util.wrapper.UniInt;
 
 import java.io.File;
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -45,10 +46,6 @@ public class JobCreator {
         this.createFisherJob();
         this.createHunterJob();
         //this.createBuilderJob();
-
-        if (Version.isPaper()) {
-            this.createSpellsmithJob();
-        }
     }
 
     private void createJob(@NotNull String id, @NotNull Consumer<Job> consumer) {
@@ -93,7 +90,7 @@ public class JobCreator {
 
     private void createMinerJob() {
         this.createJob("miner", job -> {
-            job.setIcon(NightItem.asCustomHead("1e1d4bc469d29d22a7ef6d21a61b451291f21bf51fd167e7fd07b719512e87a1"));
+            job.setIcon(NightItem.fromType(Material.IRON_PICKAXE));
             job.setDescription(Lists.newList(
                 LIGHT_GRAY.wrap("Dig deep, gather precious resources,"),
                 LIGHT_GRAY.wrap("and conquer the underground"),
@@ -152,7 +149,7 @@ public class JobCreator {
 
     private void createBlacksmithJob() {
         createJob("blacksmith", job -> {
-            job.setIcon(NightItem.asCustomHead("651eb727bd896add55f6d6783cecd793d982500f4d9476143fe08e21ff7e3f5e"));
+            job.setIcon(NightItem.fromType(Material.ANVIL));
             job.setDescription(Lists.newList(
                 LIGHT_GRAY.wrap("Get materials and craft"),
                 LIGHT_GRAY.wrap("your gear for money!"))
@@ -175,12 +172,12 @@ public class JobCreator {
                 materialMod.put("netherite", 8D);
 
                 Set<Material> items = new HashSet<>();
-                items.addAll(Tag.ITEMS_ENCHANTABLE_ARMOR.getValues());
-                items.addAll(Tag.ITEMS_ENCHANTABLE_MINING.getValues());
-                items.addAll(Tag.ITEMS_ENCHANTABLE_SWORD.getValues());
-                items.addAll(Tag.ITEMS_ENCHANTABLE_BOW.getValues());
-                items.addAll(Tag.ITEMS_ENCHANTABLE_CROSSBOW.getValues());
-                items.addAll(Tag.ITEMS_ENCHANTABLE_FISHING.getValues());
+                addTagSafe(items, "ITEMS_ENCHANTABLE_ARMOR");
+                addTagSafe(items, "ITEMS_ENCHANTABLE_MINING");
+                addTagSafe(items, "ITEMS_ENCHANTABLE_SWORD");
+                addTagSafe(items, "ITEMS_ENCHANTABLE_BOW");
+                addTagSafe(items, "ITEMS_ENCHANTABLE_CROSSBOW");
+                addTagSafe(items, "ITEMS_ENCHANTABLE_FISHING");
 
                 items.forEach(material -> {
                     double armorMod = switch (material.getEquipmentSlot()) {
@@ -206,7 +203,7 @@ public class JobCreator {
 
     private void createLumberjackJob() {
         createJob("lumberjack", job -> {
-            job.setIcon(NightItem.asCustomHead("80171f7facc6f7843103b821d9f8a69febe071404325313acbf0b9316a037e06"));
+            job.setIcon(NightItem.fromType(Material.IRON_AXE));
             job.setDescription(Lists.newList(
                 LIGHT_GRAY.wrap("Harvest towering forests and"),
                 LIGHT_GRAY.wrap("master the art of woodcutting"),
@@ -237,7 +234,7 @@ public class JobCreator {
 
     private void createFarmerJob() {
         createJob("farmer", job -> {
-            job.setIcon(NightItem.asCustomHead("9af328c87b068509aca9834eface197705fe5d4f0871731b7b21cd99b9fddc"));
+            job.setIcon(NightItem.fromType(Material.IRON_HOE));
             job.setDescription(Lists.newList(
                 LIGHT_GRAY.wrap("Tend to fertile lands,"),
                 LIGHT_GRAY.wrap("cultivate crops, and flourish"),
@@ -319,7 +316,7 @@ public class JobCreator {
 
     private void createFisherJob() {
         createJob("fisher", job -> {
-            job.setIcon(NightItem.asCustomHead("12510b301b088638ec5c8747e2d754418cb747a5ce7022c9c712ecbdc5f6f065"));
+            job.setIcon(NightItem.fromType(Material.FISHING_ROD));
             job.setDescription(Lists.newList(
                 LIGHT_GRAY.wrap("Cast your line into shimmering"),
                 LIGHT_GRAY.wrap("waters, reel in bountiful catches,"),
@@ -362,7 +359,7 @@ public class JobCreator {
 
     private void createHunterJob() {
         createJob("hunter", job -> {
-            job.setIcon(NightItem.asCustomHead("5dcf2c198f61df5a6d0ba97dbf90c337995405c17396c016c85f6f3fea52c906"));
+            job.setIcon(NightItem.fromType(Material.IRON_SWORD));
             job.setDescription(Lists.newList(
                 LIGHT_GRAY.wrap("Brave the wilderness, track elusive"),
                 LIGHT_GRAY.wrap("prey, and thrive for money!"))
@@ -373,10 +370,8 @@ public class JobCreator {
                     Class<? extends Entity> clazz = entityType.getEntityClass();
                     if (clazz == null || !entityType.isSpawnable()) return;
 
-                    World world = Bukkit.getWorlds().getFirst();
-                    Entity entity = world.createEntity(world.getSpawnLocation(), clazz);
-                    if (!(entity instanceof LivingEntity)) return;
-                    if (entity instanceof Fish) return;
+                    if (!LivingEntity.class.isAssignableFrom(clazz)) return;
+                    if (Fish.class.isAssignableFrom(clazz)) return;
 
                     double moneyMod = 1D;
                     double xpMod = 1D;
@@ -385,15 +380,15 @@ public class JobCreator {
                         moneyMod = 700D;
                         xpMod = 700D;
                     }
-                    else if (entity instanceof Animals) {
+                    else if (Animals.class.isAssignableFrom(clazz)) {
                         moneyMod = 1.15D;
                         xpMod = 1.15D;
                     }
-                    else if (entity instanceof Raider) {
+                    else if (Raider.class.isAssignableFrom(clazz)) {
                         moneyMod = 5D;
                         xpMod = 5D;
                     }
-                    else if (entity instanceof Monster) {
+                    else if (Monster.class.isAssignableFrom(clazz)) {
                         moneyMod = 3D;
                         xpMod = 3D;
                     }
@@ -408,43 +403,6 @@ public class JobCreator {
                     if (material == null) return;
 
                     objectives.add(forEntity(WorkId.KILL_ENTITY, entityType, material, reward(moneyMin, moneyMax), reward(xpMin, xpMax)));
-                });
-            });
-        });
-    }
-
-    private void createSpellsmithJob() {
-        createJob("spellsmith", job -> {
-            job.setIcon(NightItem.asCustomHead("28951399d0ebd0dfe87e50f0d6dee25274d93f1fbb38505ec971b601d1c2cb9"));
-            job.setDescription(Lists.newList(
-                LIGHT_GRAY.wrap("Get levels and enhance your"),
-                LIGHT_GRAY.wrap("gear with enchantments for money!"))
-            );
-
-            this.createObjectives(job, objectives -> {
-                double moneyMin = 17;
-                double moneyMax = 25;
-                double xpMin = 80;
-                double xpMax = 140;
-
-                Set<Enchantment> enchantments = BukkitThing.getEnchantments();
-                double maxWeight = enchantments.stream().map(Enchantment::getWeight).max(Comparator.comparingInt(i -> i)).orElse(0);
-
-                BukkitThing.getEnchantments().forEach(enchantment -> {
-                    if (enchantment.isCursed() || enchantment.isTreasure()) return;
-
-                    double weight = enchantment.getWeight();
-                    double weightMod = weight / maxWeight;
-
-                    for (int index = 0; index < enchantment.getMaxLevel(); index++) {
-                        int level = index + 1;
-                        double mod = 1D + (0.5 * level) + weightMod;
-
-                        ObjectiveReward money = reward(moneyMin * mod, moneyMax * mod);
-                        ObjectiveReward xp = reward(xpMin * mod, xpMax * mod);
-
-                        objectives.add(forEnchant(WorkId.GET_ENCHANT, enchantment, level, money, xp));
-                    }
                 });
             });
         });
@@ -542,5 +500,14 @@ public class JobCreator {
     @NotNull
     private static ObjectiveReward reward(double chance, double min, double max) {
         return new ObjectiveReward(chance, min, max);
+    }
+
+    private static void addTagSafe(@NotNull Set<Material> items, @NotNull String fieldName) {
+        try {
+            Field field = Tag.class.getField(fieldName);
+            Tag<Material> tag = (Tag<Material>) field.get(null);
+            items.addAll(tag.getValues());
+        } catch (NoSuchFieldException | IllegalAccessException | ClassCastException ignored) {
+        }
     }
 }

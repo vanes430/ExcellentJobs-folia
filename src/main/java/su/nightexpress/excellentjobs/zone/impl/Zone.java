@@ -34,6 +34,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.UnaryOperator;
 
 public class Zone extends AbstractFileData<JobsPlugin> {
@@ -61,13 +62,13 @@ public class Zone extends AbstractFileData<JobsPlugin> {
 
     public Zone(@NotNull JobsPlugin plugin, @NotNull File file) {
         super(plugin, file);
-        this.hoursByDayMap = new HashMap<>();
-        this.blockListMap = new HashMap<>();
-        this.paymentModifierMap = new HashMap<>();
-        this.renewBlocks = new HashMap<>();
+        this.hoursByDayMap = new ConcurrentHashMap<>();
+        this.blockListMap = new ConcurrentHashMap<>();
+        this.paymentModifierMap = new ConcurrentHashMap<>();
+        this.renewBlocks = new ConcurrentHashMap<>();
 
-        this.linkedJobs = new HashSet<>();
-        this.disabledInteractions = new HashSet<>();
+        this.linkedJobs = ConcurrentHashMap.newKeySet();
+        this.disabledInteractions = ConcurrentHashMap.newKeySet();
         this.xpModifier = Modifier.add(0, 0, 0);
         this.icon = new NightItem(Material.MAP);
     }
@@ -198,7 +199,7 @@ public class Zone extends AbstractFileData<JobsPlugin> {
         long resetDate = TimeUtil.createFutureTimestamp(blockList.getResetTime());
 
         this.renewBlocks.put(pos, new RenewBlock(blockData, resetDate));
-        this.plugin.runTask(task -> this.world.setBlockData(block.getLocation(), blockList.getFallbackMaterial().createBlockData()));
+        this.plugin.runTaskAtLocation(block.getLocation(), () -> this.world.setBlockData(block.getLocation(), blockList.getFallbackMaterial().createBlockData()));
         return true;
     }
 
@@ -220,8 +221,10 @@ public class Zone extends AbstractFileData<JobsPlugin> {
 
             BlockData blockData = renewBlock.getBlockData();
             Location location = pos.toLocation(this.world);
-            this.world.setBlockData(location, blockData);
-            UniParticle.of(Particle.BLOCK, blockData).play(LocationUtil.setCenter3D(location), 0.35, 0.05, 60);
+            this.plugin.runTaskAtLocation(location, () -> {
+                this.world.setBlockData(location, blockData);
+                UniParticle.of(Particle.BLOCK, blockData).play(LocationUtil.setCenter3D(location), 0.35, 0.05, 60);
+            });
 
             return true;
         });

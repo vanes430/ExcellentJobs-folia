@@ -87,6 +87,13 @@ public class BaseCommands {
             .executes((context, arguments) -> resetProgress(plugin, context, arguments))
         );
 
+        root.addChildren(DirectNode.builder(plugin, "resetuser")
+            .description(Lang.COMMAND_RESET_USER_DESC)
+            .permission(Perms.COMMAND_RESET_USER)
+            .withArgument(ArgumentTypes.playerName(CommandArguments.PLAYER).required())
+            .executes((context, arguments) -> resetUser(plugin, context, arguments))
+        );
+
         root.addChildren(DirectNode.builder(plugin, "setstate")
             .description(Lang.COMMAND_SET_STATE_DESC)
             .permission(Perms.COMMAND_SET_STATE)
@@ -194,6 +201,36 @@ public class BaseCommands {
                     .replace(job.replacePlaceholders())
                     .replace(Placeholders.PLAYER_NAME, user.getName()));
             }
+        });
+        return true;
+    }
+
+    private static boolean resetUser(@NotNull JobsPlugin plugin, @NotNull CommandContext context, @NotNull ParsedArguments arguments) {
+        String playerName = arguments.getStringArgument(CommandArguments.PLAYER);
+
+        plugin.getUserManager().manageUser(playerName, user -> {
+            if (user == null) {
+                context.errorBadPlayer();
+                return;
+            }
+
+            Player target = user.getPlayer();
+            if (target != null) {
+                plugin.getJobManager().payForJob(target);
+                plugin.runTaskAtPlayer(target, target::closeInventory);
+            }
+
+            user.getDataMap().clear();
+            user.getBoosterMap().clear();
+            user.getStatsMap().clear();
+
+            // Re-fill with default data
+            plugin.getJobManager().getJobs().forEach(user::getData);
+
+            plugin.getUserManager().save(user);
+
+            context.send(Lang.COMMAND_RESET_USER_DONE, replacer -> replacer
+                .replace(Placeholders.PLAYER_NAME, user.getName()));
         });
         return true;
     }

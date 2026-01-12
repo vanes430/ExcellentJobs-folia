@@ -10,8 +10,8 @@ import su.nightexpress.excellentjobs.job.impl.JobState;
 import su.nightexpress.excellentjobs.util.JobUtils;
 import su.nightexpress.nightcore.util.TimeUtil;
 
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.UnaryOperator;
 
 public class JobData  {
@@ -22,13 +22,13 @@ public class JobData  {
 
     private final Set<Integer> claimedLevelRewards;
 
-    private JobState state;
-    private int      level;
-    private int      xp;
-    private long     cooldown;
+    private volatile JobState state;
+    private volatile int      level;
+    private volatile int      xp;
+    private volatile long     cooldown;
 
     private JobOrderData orderData;
-    private long         nextOrderDate;
+    private volatile long         nextOrderDate;
 
     @NotNull
     public static JobData create(@NotNull Job job) {
@@ -38,7 +38,7 @@ public class JobData  {
         long nextOrderDate = 0L;
         long cooldown = 0L;
 
-        Set<Integer> obtainedLevelRewards = new HashSet<>();
+        Set<Integer> obtainedLevelRewards = ConcurrentHashMap.newKeySet();
 
         return new JobData(job, state, JobUtils.START_LEVEL, JobUtils.START_XP, cooldown, limitData, orderData, nextOrderDate, obtainedLevelRewards);
     }
@@ -59,7 +59,8 @@ public class JobData  {
         this.limitData = limitData;
         this.setOrderData(orderData);
         this.setNextOrderDate(nextOrderDate);
-        this.claimedLevelRewards = new HashSet<>(claimedLevelRewards);
+        this.claimedLevelRewards = ConcurrentHashMap.newKeySet();
+        this.claimedLevelRewards.addAll(claimedLevelRewards);
         this.setLevel(level);
         this.setXP(xp);
 

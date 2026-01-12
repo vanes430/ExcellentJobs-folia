@@ -1,5 +1,6 @@
 package su.nightexpress.excellentjobs.job;
 
+import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -36,6 +37,7 @@ import su.nightexpress.nightcore.manager.AbstractManager;
 import su.nightexpress.nightcore.ui.UIUtils;
 import su.nightexpress.nightcore.ui.menu.confirmation.Confirmation;
 import su.nightexpress.nightcore.util.*;
+import su.nightexpress.nightcore.util.bukkit.NightItem;
 import su.nightexpress.nightcore.util.text.night.wrapper.TagWrappers;
 import su.nightexpress.nightcore.util.time.TimeFormatType;
 import su.nightexpress.nightcore.util.time.TimeFormats;
@@ -58,10 +60,11 @@ public class JobManager extends AbstractManager<JobsPlugin> {
     private JobMenu        jobMenu;
     private ObjectivesMenu objectivesMenu;
     private RewardsMenu    rewardsMenu;
+    private JobConfirmMenu confirmMenu;
 
     public JobManager(@NotNull JobsPlugin plugin) {
         super(plugin);
-        this.jobMap = new HashMap<>();
+        this.jobMap = new ConcurrentHashMap<>();
         this.progressBarMap = new ConcurrentHashMap<>();
     }
 
@@ -106,9 +109,10 @@ public class JobManager extends AbstractManager<JobsPlugin> {
 
     @Override
     protected void onShutdown() {
-        this.payForJob();
+        this.payForJob(true);
         this.progressBarMap.values().forEach(map -> map.values().forEach(ProgressBar::discard));
 
+        if (this.confirmMenu != null) this.confirmMenu.clear();
         if (this.jobMenu != null) this.jobMenu.clear();
         if (this.rewardsMenu != null) this.rewardsMenu.clear();
         if (this.objectivesMenu != null) this.objectivesMenu.clear();
@@ -141,6 +145,7 @@ public class JobManager extends AbstractManager<JobsPlugin> {
         this.jobMenu = new JobMenu(this.plugin);
         this.objectivesMenu = new ObjectivesMenu(this.plugin);
         this.rewardsMenu = new RewardsMenu(this.plugin);
+        this.confirmMenu = new JobConfirmMenu(this.plugin);
     }
 
     @NotNull
@@ -261,21 +266,17 @@ public class JobManager extends AbstractManager<JobsPlugin> {
     public void openLeaveConfirmMenu(@NotNull Player player, @NotNull Job job) {
         JobData data = plugin.getUserManager().getOrFetch(player).getData(job);
 
-        if (Version.isAtLeast(Version.MC_1_21_7)) {
-            JobDialogs.openLeaveConfirm(this.plugin, player, job);
-            return;
-        }
-
-        UIUtils.openConfirmation(player, Confirmation.builder()
-            .onAccept((viewer, event) -> {
+        this.confirmMenu.open(player, new JobConfirmMenu.ConfirmData(
+            su.nightexpress.nightcore.util.text.night.wrapper.TagWrappers.RED.wrap(su.nightexpress.nightcore.util.text.night.wrapper.TagWrappers.BOLD.wrap("Confirm Leave")),
+            job.getIcon().localized(Lang.UI_JOB_LEAVE_INFO).replacement(replacer -> replacer.replace(data.replaceAllPlaceholders())),
+            (viewer, event) -> {
                 this.leaveJob(player, job);
-                this.plugin.runTask(task -> player.closeInventory());
-            })
-            .onReturn((viewer, event) -> {
-                this.plugin.runTask(task -> this.openJobMenu(viewer.getPlayer(), job));
-            })
-            .setIcon(job.getIcon().localized(Lang.UI_JOB_LEAVE_INFO).replacement(replacer -> replacer.replace(data.replaceAllPlaceholders())))
-            .build());
+                this.plugin.runTaskAtPlayer(player, () -> this.openJobMenu(player, job));
+            },
+            (viewer, event) -> {
+                this.plugin.runTaskAtPlayer(player, () -> this.openJobMenu(player, job));
+            }
+        ));
     }
 
     public boolean canGetMoreJobs(@NotNull Player player) {
@@ -479,7 +480,18 @@ public class JobManager extends AbstractManager<JobsPlugin> {
     }
 
     public void payForJob() {
-        this.plugin.getServer().getOnlinePlayers().forEach(this::payForJob);
+        this.payForJob(false);
+    }
+
+    public void payForJob(boolean forceSync) {
+        this.plugin.getServer().getOnlinePlayers().forEach(player -> {
+            if (forceSync) {
+                this.payForJob(player);
+            }
+            else {
+                this.plugin.runTaskAtPlayer(player, () -> this.payForJob(player));
+            }
+        });
     }
 
     /**
@@ -677,7 +689,7 @@ public class JobManager extends AbstractManager<JobsPlugin> {
 
         if (orderData.isCompleted() && !orderData.isRewarded()) {
             List<OrderReward> rewards = orderData.translateRewards();
-            rewards.forEach(reward -> reward.give(player));
+            plugin.runFoliaTask(() -> rewards.forEach(reward -> reward.give(player)));
             orderData.setRewarded(true);
             Lang.SPECIAL_ORDER_COMPLETED.getMessage().send(player, replacer -> replacer.replace(job.replacePlaceholders()));
         }
@@ -761,7 +773,7 @@ public class JobManager extends AbstractManager<JobsPlugin> {
         xpRoll = event.getXPAmount() * event.getXPMultiplier();
         if (xpRoll == 0D || Double.isNaN(xpRoll) || Double.isInfinite(xpRoll)) return;
 
-        int xpFinal = (int) xpRoll;
+        int xpFinal = (xpRoll > 0 && xpRoll < 1.0) ? 1 : (int) xpRoll;
 
         if (xpFinal < 0) {
             this.removeXP(player, job, Math.abs(xpFinal), true);
@@ -806,7 +818,7 @@ public class JobManager extends AbstractManager<JobsPlugin> {
         }
     }
 
-    public void handleLevelSet(@NotNull JobUser user, @NotNull Job job, int amount, @Nullable Player player, boolean silent) {
+    public synchronized void handleLevelSet(@NotNull JobUser user, @NotNull Job job, int amount, @Nullable Player player, boolean silent) {
         JobData data = user.getData(job);
         int oldLevel = data.getLevel();
 
@@ -900,7 +912,7 @@ public class JobManager extends AbstractManager<JobsPlugin> {
         this.handleXPSet(user, job, data.getXP() - amount, player);
     }
 
-    public void handleXPSet(@NotNull JobUser user, @NotNull Job job, int amount, /*boolean silent,*/ @Nullable Player player) {
+    public synchronized void handleXPSet(@NotNull JobUser user, @NotNull Job job, int amount, /*boolean silent,*/ @Nullable Player player) {
         JobData data = user.getData(job);
         int oldLevel = data.getLevel();
 
@@ -934,8 +946,9 @@ public class JobManager extends AbstractManager<JobsPlugin> {
         for (int level = JobUtils.START_LEVEL; level < jobLevel + 1; level++) {
             // Old level commands
             if (!data.isLevelRewardObtained(level)) {
+                int finalLevel = level;
                 job.getLevelUpCommands(level).forEach(command -> {
-                    plugin.getServer().dispatchCommand(plugin.getServer().getConsoleSender(), Placeholders.forPlayer(player).apply(command));
+                    plugin.runFoliaTask(() -> plugin.getServer().dispatchCommand(plugin.getServer().getConsoleSender(), Placeholders.forPlayer(player).apply(command)));
                 });
 
                 for (LevelReward levelReward : rewards.getRewards(level, state)) {
@@ -957,7 +970,7 @@ public class JobManager extends AbstractManager<JobsPlugin> {
             );
         }
         else {
-            levelRewards.forEach(reward -> reward.run(player));
+            plugin.runFoliaTask(() -> levelRewards.forEach(reward -> reward.run(player)));
 
             Lang.JOB_LEVEL_REWARDS_LIST.getMessage().send(player, replacer -> replacer
                 .replace(Placeholders.GENERIC_ENTRY, list -> {
