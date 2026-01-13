@@ -201,9 +201,9 @@ public class Config {
 
     public static final ConfigValue<Material> ZONES_HIGHLIGHT_BLOCK_WIRE = ConfigValue.create("Zones.Highlighting.WireBlock",
         Material.class,
-        Material.CHAIN,
+        Material.IRON_BARS,
         "Block type used for a fake block display entity for zone selection's corners connections.",
-        "[Default is " + BukkitThing.getValue(Material.CHAIN) + "]"
+        "[Default is " + BukkitThing.getValue(Material.IRON_BARS) + "]"
     );
 
     public static final ConfigValue<Boolean> SPECIAL_ORDERS_ENABLED = ConfigValue.create("SpecialOrders.Enabled",
